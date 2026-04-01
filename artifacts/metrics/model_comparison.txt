@@ -5,8 +5,8 @@ Metric                            XGBoost   LightGBM
 -------------------------------------------------------
 ROC-AUC                            0.9333     0.9111
 PR-AUC                             0.6273     0.6416
-XGBoost inference time (s)         0.0112        N/A
-LightGBM train time (s)               N/A     0.1426
+XGBoost inference time (s)         0.0096        N/A
+LightGBM train time (s)               N/A     0.0781
 
 Decision: XGBoost selected for production.
 Rationale: SHAP-based regulatory explainability outweighs LightGBM's speed advantage at current dataset scale.
