@@ -257,7 +257,7 @@ POST /recommendations
 ## Clone repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/vishaltelukoti/Ecom_recom_system.git
 cd ecom-recommendation
 ```
 
