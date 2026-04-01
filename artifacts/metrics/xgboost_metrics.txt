@@ -1,0 +1,23 @@
+XGBoost + SMOTE + RandomizedSearchCV  Metrics
+==================================================
+ROC-AUC  (test): 0.9333
+PR-AUC   (test): 0.6273
+
+Best hyperparameters:
+  model__subsample: 0.9
+  model__n_estimators: 200
+  model__min_child_weight: 10
+  model__max_depth: 4
+  model__learning_rate: 0.1
+  model__colsample_bytree: 0.8
+
+Confusion Matrix:
+[[39, 6], [1, 7]]
+
+Classification Report:
+              precision    recall  f1-score    support
+0              0.975000  0.866667  0.917647  45.000000
+1              0.538462  0.875000  0.666667   8.000000
+accuracy       0.867925  0.867925  0.867925   0.867925
+macro avg      0.756731  0.870833  0.792157  53.000000
+weighted avg   0.909107  0.867925  0.879763  53.000000

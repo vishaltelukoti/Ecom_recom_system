@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+
+# Packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Test / lint / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+coverage.xml
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Python compiled artifacts
+*.pyo
+*.pyd
+
+# Local runtime outputs
+tmp/
+temp/
+
+# Optional: ignore generated artifacts if you do not want them versioned
+# Uncomment based on your submission strategy
+# data/interim/
+# data/processed/
+# artifacts/models/
+# artifacts/metrics/
+# artifacts/shap/
+
+# Optional: keep tests clean
+.cache/
+
+# Bytecode folders anywhere
+**/__pycache__/

@@ -1,0 +1,28 @@
+Sample Prediction Context
+========================================
+user_id                                       U_039
+product_id                                    P_014
+event_time                      2026-02-05 16:53:41
+user_age                                         35
+user_city_tier                               Tier-3
+product_category                        Electronics
+product_brand                                   JBL
+price                                      20704.72
+price_log                                  9.938165
+session_duration                               7.58
+browsing_time_last_7d_mins                10.388333
+browsing_time_last_7d_log                  2.432589
+days_since_last_purchase                      999.0
+days_since_last_purchase_log               6.907755
+avg_cart_value                              3263.75
+avg_cart_value_log                         8.090938
+total_orders                                    0.0
+total_browsing_events                             6
+total_clicks                                      3
+click_through_proxy                             0.5
+category_affinity                                 0
+is_affordable                                     0
+price_to_avg_cart_ratio                    6.343844
+event_hour                                       16
+event_dayofweek                                   3
+purchased_within_7_days                           0
