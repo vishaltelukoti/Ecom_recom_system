@@ -21,6 +21,16 @@ It integrates *Machine Learning*, *Explainable AI (SHAP)*, *LLM-based interactio
 
 ---
 
+## Assessment Requirement Mapping
+- Purchase propensity model → `src/models/train_xgboost.py`
+- Reproducible preprocessing pipeline → `src/models/train_xgboost.py`, `src/pipelines/train_pipeline.py`
+- SHAP explanations → `src/explainability/shap_explainer.py`
+- Conversational assistant → `src/assistant/chain.py`
+- FastAPI deployment → `src/api/main.py`
+- Docker Compose deployment → `docker-compose.yml`
+
+---
+
 # Architecture Overview
 
 ```
