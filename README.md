@@ -369,20 +369,38 @@ docker compose down
 
 # Testing the API
 
-## Health
+## Health Endpoint
+
+### Linux / Mac
 
 ```bash
 curl http://localhost:8000/health
 ```
 
+### Windows PowerShell
+
+```bash
+Invoke-RestMethod http://localhost:8000/health | ConvertTo-Json
+```
 ---
 
-## Recommendations
+## Recommendations Endpoint
 
 ```bash
 curl -X POST http://localhost:8000/recommendations \
 -H "Content-Type: application/json" \
--d '{"user_id":"U_001","product_ids":["P_001","P_002","P_003"]}'
+-d '{
+  "user_id": "U_030",
+  "product_ids": ["P_007","P_061","P_040"]
+}'
+```
+
+### Windows Powershell
+
+```bash
+Invoke-RestMethod -Method POST "http://localhost:8000/recommendations" `
+-ContentType "application/json" `
+-Body '{"user_id":"U_030","product_ids":["P_007","P_061","P_040"]}' | ConvertTo-Json -Depth 10
 ```
 
 ---
