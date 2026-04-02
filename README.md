@@ -386,6 +386,8 @@ Invoke-RestMethod http://localhost:8000/health | ConvertTo-Json
 
 ## Recommendations Endpoint
 
+### Mac / Linux
+
 ```bash
 curl -X POST http://localhost:8000/recommendations \
 -H "Content-Type: application/json" \
