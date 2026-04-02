@@ -82,6 +82,67 @@ def _affordable_flag(category: str, price: float) -> int:
 
 
 def _build_fallback_rows(user_rows: pd.DataFrame, candidate_products: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cold-start fallback: synthesises scoreable feature rows for user-product
+    pairs that do not exist in the feature store.
+
+    BONUS: Cold-start problem and hybrid recommendation strategy
+    ============================================================
+
+    The cold-start problem occurs when a new user has no interaction
+    history — no purchases, clicks, or browsing events. A pure
+    collaborative filtering model cannot score them because it relies
+    entirely on historical user-product signals that do not yet exist.
+
+    This project handles cold-start at two levels:
+
+    1. Partial cold-start (known user, unknown product)
+    ---------------------------------------------------
+    When a user exists in the feature store but the requested product_id
+    has no precomputed row, this function synthesises a feature row by:
+      - Taking the user's most recent event row as the user-side context
+        (age, city tier, browsing time, avg cart value, etc.)
+      - Injecting the candidate product's attributes (category, brand,
+        price) directly into that row
+      - Recomputing derived features (price_log, price_to_avg_cart_ratio,
+        category_affinity, is_affordable) from the combined row
+
+    This gives the XGBoost model a complete, scoreable feature vector
+    even for products the user has never interacted with. It is a
+    content-based fallback layered inside a collaborative framework —
+    the first step toward a hybrid approach.
+
+    2. Proposed hybrid strategy (full cold-start — new user)
+    ---------------------------------------------------------
+    For a completely new user with no history, the fallback above
+    cannot provide user-side signals. The recommended hybrid approach
+    is a two-phase blend:
+
+    Phase 1 — Content-based only (0 interactions):
+      Recommend products based purely on product attributes — category
+      popularity, price tier, and catalog trends. No user signals are
+      used. This is equivalent to a "top picks in Electronics under
+      Rs. 5000" strategy driven by global product metadata.
+
+    Phase 2 — Collaborative blend (interactions >= threshold):
+      As the user accumulates events (clicks, purchases, session time),
+      collaborative signals are progressively blended in. The weight
+      of content-based vs collaborative features shifts as a function
+      of interaction count:
+
+        score = α * content_score + (1 - α) * collaborative_score
+        α = max(0, 1 - (interactions / threshold))
+
+      With threshold=10, a user with 3 interactions gets
+      α=0.7 (mostly content), a user with 10+ gets α=0 (fully
+      collaborative). This ensures smooth degradation rather than
+      a hard switch between strategies.
+
+    This hybrid approach directly mirrors how production recommendation
+    systems (YouTube, Spotify, Amazon) handle new users — serve
+    content-based recommendations immediately, retire them gradually
+    as personalisation data accumulates.
+    """
     latest_user_row = (
         user_rows.sort_values("event_time", ascending=False)
         .iloc[0]
