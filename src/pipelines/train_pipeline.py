@@ -13,7 +13,32 @@ Steps executed in order:
 Usage:
     python -m src.pipelines.train_pipeline            # full run
     python -m src.pipelines.train_pipeline --skip-shap  # skip slow SHAP step
+
+B2: Why LightGBM is faster — GOSS and EFB
+==========================================
+XGBoost scans all N samples × all F features at every split (exact greedy).
+On 10M rows with ~300 post-OHE features, this drives the 4.2hr training cost.
+LightGBM cuts this with two algorithms:
+
+GOSS (Gradient-based One-Side Sampling): samples with large gradients are
+under-fitted and information-rich; small-gradient samples contribute little.
+GOSS retains all top-a% high-gradient samples, randomly keeps b% of the rest,
+and upweights them by (1-a)/b to correct for bias. With a=0.2, b=0.1 on 10M
+rows: ~2.8M effective samples per split vs 10M — a 3.5× data reduction.
+
+EFB (Exclusive Feature Bundling): OHE produces many mutually exclusive sparse
+features (is_Electronics / is_Fashion / is_FMCG are never non-zero together).
+EFB bundles them via greedy graph colouring, encoding each into a distinct value
+range within the bundle. Reduces ~300 post-OHE columns to ~90 bundles — 3×
+fewer features per split, zero information loss for exclusive features.
+
+Combined: ~0.09× compute cost per split vs XGBoost. At 10M rows LightGBM
+trains in ~40% of XGBoost's time. XGBoost is still chosen for production
+because SHAP TreeExplainer produces exact Shapley values against its tree
+structure — LightGBM requires approximated SHAP, which is unsuitable for
+the user-facing "Why we recommend this" explanations under regulatory review.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,9 +56,7 @@ log = logging.getLogger("train_pipeline")
 def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
     total_start = time.perf_counter()
 
-    # ------------------------------------------------------------------
     # Step 1 — Preprocessing
-    # ------------------------------------------------------------------
     log.info("=" * 60)
     log.info("STEP 1/5  Preprocessing raw data")
     log.info("=" * 60)
@@ -42,9 +65,7 @@ def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
     run_preprocessing()
     log.info("Preprocessing done in %.1fs", time.perf_counter() - t0)
 
-    # ------------------------------------------------------------------
     # Step 2 — Feature engineering
-    # ------------------------------------------------------------------
     log.info("=" * 60)
     log.info("STEP 2/5  Feature engineering")
     log.info("=" * 60)
@@ -53,9 +74,7 @@ def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
     build_features()
     log.info("Feature engineering done in %.1fs", time.perf_counter() - t0)
 
-    # ------------------------------------------------------------------
     # Step 3 — Model training (XGBoost + SMOTE + RandomizedSearchCV)
-    # ------------------------------------------------------------------
     log.info("=" * 60)
     log.info("STEP 3/5  Training XGBoost model (n_iter=20, cv=5)")
     log.info("=" * 60)
@@ -68,9 +87,7 @@ def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
         metrics["roc_auc"],
     )
 
-    # ------------------------------------------------------------------
     # Step 4 — SHAP analysis
-    # ------------------------------------------------------------------
     if skip_shap:
         log.info("STEP 4/5  SHAP analysis  [SKIPPED]")
     else:
@@ -82,9 +99,7 @@ def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
         run_shap()
         log.info("SHAP analysis done in %.1fs", time.perf_counter() - t0)
 
-    # ------------------------------------------------------------------
     # Step 5 — Model comparison (LightGBM vs XGBoost)
-    # ------------------------------------------------------------------
     if skip_compare:
         log.info("STEP 5/5  LightGBM comparison  [SKIPPED]")
     else:
@@ -96,9 +111,8 @@ def run(skip_shap: bool = False, skip_compare: bool = False) -> None:
         run_compare()
         log.info("Model comparison done in %.1fs", time.perf_counter() - t0)
 
-    # ------------------------------------------------------------------
+    
     # Summary
-    # ------------------------------------------------------------------
     log.info("=" * 60)
     log.info("PIPELINE COMPLETE in %.1fs", time.perf_counter() - total_start)
     log.info("Artifacts:")
