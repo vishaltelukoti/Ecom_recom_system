@@ -43,13 +43,12 @@ def main() -> None:
         print(f"\nAssistant: {response.assistant_message}\n")
 
         if response.recommendations:
-            print("Recommendations:")
-            for rec in response.recommendations:
-                print(f"  {rec.rank}. [{rec.product_id}] {rec.title} "
-                      f"— Rs. {rec.price:.0f}  (score: {rec.score:.3f})")
-                for reason in rec.reasons:
-                    print(f"     • {reason}")
-            print()
+            print("\nRecommendations:")
+            for idx, rec in enumerate(response.recommendations, 1):
+                print(f"  {idx}. [{rec.product_id}] {rec.title} "
+                f"({rec.brand}) — Rs. {rec.price:.0f}  [score: {rec.score:.3f}]")
+            for reason in rec.reasons:
+                print(f"       • {reason}")
 
 
 if __name__ == "__main__":

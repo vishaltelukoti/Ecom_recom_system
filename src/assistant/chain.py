@@ -45,6 +45,8 @@ _query_extractor = None
 def build_query_extractor():
     from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
     from langchain_groq import ChatGroq
+    from langchain_core.output_parsers import StrOutputParser
+    import json
 
     groq_api_key = os.getenv("GROQ_API_KEY")
     if not groq_api_key:
@@ -57,7 +59,6 @@ def build_query_extractor():
         temperature=0,
         groq_api_key=groq_api_key,
     )
-    structured_llm = llm.with_structured_output(ShoppingQuery)
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", SYSTEM_PROMPT),
@@ -65,7 +66,7 @@ def build_query_extractor():
         ("human", "{user_message}"),
     ])
 
-    return prompt | structured_llm
+    return prompt | llm | StrOutputParser()
 
 
 def _get_query_extractor():
@@ -250,12 +251,29 @@ def run_assistant(
         return response, session
 
     try:
+        import json
         extractor = _get_query_extractor()
         history = session.memory
-        parsed: ShoppingQuery = extractor.invoke({
+        raw: str = extractor.invoke({
             "user_message": user_message,
             "history": history,
         })
+
+        # Strip markdown code fences if present
+        clean = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+        try:
+            data = json.loads(clean)
+        except json.JSONDecodeError:
+            data = {}
+
+        parsed = ShoppingQuery(
+            category=data.get("category"),
+            max_price=data.get("max_price"),
+            brand=data.get("brand"),
+            intent=data.get("intent", "recommend"),
+            notes=data.get("notes"),
+        )
     except RuntimeError as exc:
         response = AssistantResponse(
             user_id=user_id,

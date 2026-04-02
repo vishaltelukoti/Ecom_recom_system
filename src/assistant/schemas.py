@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any,Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
+    
 
 class RecommendationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -45,27 +45,27 @@ class RecommendationRequest(BaseModel):
 
 
 class ShoppingQuery(BaseModel):
-    category: str | None = Field(
+    category: Optional[str] = Field(
         default=None,
         description="Product category such as Fashion, Electronics, FMCG, headphones, shoes",
     )
-    max_price: float | None = Field(
+    max_price: Optional[float] = Field(
         default=None,
         description="Maximum user budget in Rs.",
     )
-    brand: str | None = Field(
+    brand: Optional[str] = Field(
         default=None,
         description="Preferred brand if mentioned",
     )
     intent: str = Field(default="recommend", description="User intent")
-    notes: str | None = Field(
+    notes: Optional[str] = Field(
         default=None,
         description="Any additional user preferences",
     )
 
     @field_validator("category", "brand", "notes")
     @classmethod
-    def strip_optional_strings(cls, value: str | None) -> str | None:
+    def strip_optional_strings(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return None
         value = value.strip()
@@ -73,7 +73,7 @@ class ShoppingQuery(BaseModel):
 
     @field_validator("max_price")
     @classmethod
-    def validate_max_price(cls, value: float | None) -> float | None:
+    def validate_max_price(cls, value: Optional[float]) -> Optional[float]:
         if value is not None and value <= 0:
             raise ValueError("max_price must be positive")
         return value
