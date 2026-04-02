@@ -101,7 +101,7 @@ def _append_turn(session: ConversationSession, user_message: str, assistant_mess
     Appends a user/assistant turn to the conversation memory list.
 
     Q15: ConversationBufferMemory vs ConversationSummaryMemory
-    
+    ===========================================================
     ConversationBufferMemory stores every turn verbatim. The full
     conversation history is injected into every subsequent prompt,
     giving the LLM exact access to every constraint the user stated.
@@ -143,6 +143,45 @@ def _append_turn(session: ConversationSession, user_message: str, assistant_mess
     except Exception:
         session.memory.append({"role": "user", "content": user_message})
         session.memory.append({"role": "assistant", "content": assistant_message})
+
+
+def _validate_recommendation_products(
+    recommendations: list[RecommendationResult],
+    candidate_products: pd.DataFrame,
+) -> list[RecommendationResult]:
+    """
+    Post-generation hallucination safeguard.
+
+    Validates that every product_id in the assistant's recommendations
+    actually exists in the candidate product catalog before returning
+    the response to the user.
+
+    Q16: Hallucination safeguard — runtime grounding check
+    =======================================================
+    The system prompt instructs the LLM not to invent products, and
+    Pydantic structured output constrains the response schema. However,
+    neither prevents the LLM from generating a plausible-looking but
+    fabricated product_id that passes schema validation.
+
+    This function is a runtime grounding check: it cross-references
+    every returned product_id against the actual product catalog
+    (the same DataFrame used for retrieval) and silently drops any
+    recommendation whose product_id does not exist there. This ensures
+    the user is never shown a hallucinated product, price, or brand —
+    even if the LLM generates one that passes all upstream checks.
+    """
+    valid_ids = set(candidate_products["product_id"].tolist())
+    validated = [r for r in recommendations if r.product_id in valid_ids]
+
+    dropped = len(recommendations) - len(validated)
+    if dropped > 0:
+        log.warning(
+            "Hallucination safeguard removed %d recommendation(s) "
+            "with product_id(s) not found in catalog.",
+            dropped,
+        )
+
+    return validated
 
 
 def _validate_ranked_features(ranked: pd.DataFrame) -> None:
@@ -303,6 +342,19 @@ def run_assistant(
                 reasons=reasons,
             )
         )
+
+    # Hallucination safeguard: drop any product_id not found in the catalog
+    recommendations = _validate_recommendation_products(recommendations, candidate_products)
+
+    if not recommendations:
+        response = AssistantResponse(
+            user_id=user_id,
+            interpreted_query=parsed,
+            recommendations=[],
+            assistant_message="No valid products could be verified. Please try a different query.",
+        )
+        _append_turn(session, user_message, response.assistant_message)
+        return response, session
 
     lines = ["Here are your top recommendations:"]
     for idx, rec in enumerate(recommendations, 1):
