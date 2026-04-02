@@ -97,6 +97,45 @@ def _ensure_runtime_resources():
 
 
 def _append_turn(session: ConversationSession, user_message: str, assistant_message: str) -> None:
+    """
+    Appends a user/assistant turn to the conversation memory list.
+
+    Q15: ConversationBufferMemory vs ConversationSummaryMemory
+    
+    ConversationBufferMemory stores every turn verbatim. The full
+    conversation history is injected into every subsequent prompt,
+    giving the LLM exact access to every constraint the user stated.
+
+    ConversationSummaryMemory compresses older turns into a rolling
+    summary using a secondary LLM call. This keeps the prompt short
+    for long conversations but risks paraphrasing away specific
+    constraints — e.g. "under Rs. 3000" might become "budget-conscious"
+    in the summary, causing the assistant to return out-of-budget items.
+
+    For a multi-turn shopping session, ConversationBufferMemory is the
+    correct choice because:
+
+    1. Constraints must be preserved exactly. If the user says
+       "make it cheaper" in turn 3, the assistant must remember the
+       exact price limit from turn 1 — a lossy summary cannot
+       guarantee this.
+
+    2. Shopping sessions are short (typically 3-6 turns). Buffer
+       memory's weakness — growing prompt size — is not a problem
+       at this scale. The context window cost is negligible.
+
+    3. Each turn carries dense, specific information (category, brand,
+       price, size constraints) that a summary LLM is likely to
+       generalise or drop entirely, breaking constraint chaining.
+
+    ConversationSummaryMemory would be preferable for long open-ended
+    sessions (e.g. a customer support chat spanning 30+ turns) where
+    exact recall of early turns matters less than overall context.
+
+    Implementation: we use a plain list of HumanMessage / AIMessage
+    objects passed directly to MessagesPlaceholder, which is functionally
+    equivalent to ConversationBufferMemory without the added dependency.
+    """
     try:
         from langchain_core.messages import AIMessage, HumanMessage
         session.memory.append(HumanMessage(content=user_message))
